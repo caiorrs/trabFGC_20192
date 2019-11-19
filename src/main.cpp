@@ -5,7 +5,7 @@
 //    INF01047 Fundamentos de Computação Gráfica
 //               Prof. Eduardo Gastal
 //
-//                   LABORATÓRIO 2
+//                   TRABALHO FINAL
 //
 
 // Arquivos "headers" padrões de C podem ser incluídos em um
@@ -287,12 +287,6 @@ int main()
     // Habilitamos o Z-buffer. Veja slide 108 do documento "Aula_09_Projecoes.pdf".
     glEnable(GL_DEPTH_TEST);
 
-    // Variáveis auxiliares utilizadas para chamada à função
-    // TextRendering_ShowModelViewProjection(), armazenando matrizes 4x4.
-    glm::mat4 the_projection;
-    glm::mat4 the_model;
-    glm::mat4 the_view;
-
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
@@ -400,9 +394,6 @@ int main()
 
                 transX += DIST_BETWEEN_CUBES;
                 model = Matrix_Translate(-transX, 0.0f, -transZ); // translação
-                the_model = model;
-                the_projection = projection;
-                the_view = view;
 
                 // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
                 // arquivo "shader_vertex.glsl", onde esta é efetivamente
@@ -504,24 +495,6 @@ int main()
         // "Desligamos" o VAO, evitando assim que operações posteriores venham a
         // alterar o mesmo. Isso evita bugs.
         glBindVertexArray(0);
-
-        // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o
-        // passamos por todos os sistemas de coordenadas armazenados nas
-        // matrizes the_model, the_view, e the_projection; e escrevemos na tela
-        // as matrizes e pontos resultantes dessas transformações.
-        glm::vec4 p_model(0.5f, 0.5f, 0.5f, 1.0f);
-        TextRendering_ShowModelViewProjection(window, the_projection, the_view, the_model, p_model);
-
-        // Imprimimos na tela os ângulos de Euler que controlam a rotação do
-        // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
-
-        // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
-
-        // Imprimimos na tela informação sobre o número de quadros renderizados
-        // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1284,3 +1257,60 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
 
+class block
+{
+public:
+    GLint model_uniform;
+    GLint view_uniform;
+    GLint projection_uniform;
+    GLint render_as_black_uniform;
+    bool isFixedBlock;
+    block(bool isFixed, GLuint program_id)
+    {
+        isFixedBlock = isFixed;
+        model_uniform = glGetUniformLocation(program_id, "model");
+        view_uniform = glGetUniformLocation(program_id, "view");
+        projection_uniform = glGetUniformLocation(program_id, "projection");
+        render_as_black_uniform = glGetUniformLocation(program_id, "render_as_black");
+    };
+
+    void placeOnScene(float positionX, float positionZ)
+    {
+        glm::mat4 model;
+        model = Matrix_Translate(positionX, 0.0f, positionZ);
+
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+
+        glUniform1i(render_as_black_uniform, false);
+
+        glDrawElements(
+            g_VirtualScene["cube_faces"].rendering_mode,
+            g_VirtualScene["cube_faces"].num_indices,
+            GL_UNSIGNED_INT,
+            (void*)g_VirtualScene["cube_faces"].first_index
+        );
+
+        glLineWidth(4.0f);
+
+        glDrawElements(
+            g_VirtualScene["axes"].rendering_mode,
+            g_VirtualScene["axes"].num_indices,
+            GL_UNSIGNED_INT,
+            (void*)g_VirtualScene["axes"].first_index
+        );
+
+        glUniform1i(render_as_black_uniform, true);
+
+        glDrawElements(
+            g_VirtualScene["cube_edges"].rendering_mode,
+            g_VirtualScene["cube_edges"].num_indices,
+            GL_UNSIGNED_INT,
+            (void*)g_VirtualScene["cube_edges"].first_index
+        );
+    };
+
+    void explode()
+    {
+
+    };
+};
