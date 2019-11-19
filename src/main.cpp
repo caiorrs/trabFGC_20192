@@ -173,6 +173,60 @@ bool g_UsePerspectiveProjection = true;
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = false;
 
+class Block
+{
+public:
+    GLint model_uniform;
+    GLint view_uniform;
+    GLint projection_uniform;
+    GLint render_as_black_uniform;
+    bool isFixedBlock;
+    Block(bool isFixed, GLuint program_id)
+    {
+        isFixedBlock = isFixed;
+        model_uniform = glGetUniformLocation(program_id, "model");
+        view_uniform = glGetUniformLocation(program_id, "view");
+        projection_uniform = glGetUniformLocation(program_id, "projection");
+        render_as_black_uniform = glGetUniformLocation(program_id, "render_as_black");
+    };
+
+    void placeOnScene(float positionX, float positionZ)
+    {
+        glm::mat4 model;
+        model = Matrix_Translate(positionX, 0.0f, positionZ);
+
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+
+        glUniform1i(render_as_black_uniform, false);
+
+        glDrawElements(
+            g_VirtualScene["cube_faces"].rendering_mode,
+            g_VirtualScene["cube_faces"].num_indices,
+            GL_UNSIGNED_INT,
+            (void*)g_VirtualScene["cube_faces"].first_index
+        );
+
+        glLineWidth(4.0f);
+
+        glUniform1i(render_as_black_uniform, true);
+
+        glDrawElements(
+            g_VirtualScene["cube_edges"].rendering_mode,
+            g_VirtualScene["cube_edges"].num_indices,
+            GL_UNSIGNED_INT,
+            (void*)g_VirtualScene["cube_edges"].first_index
+        );
+    };
+
+    void explode()
+    {
+        if (!isFixedBlock)
+        {
+
+        }
+    };
+};
+
 int main()
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -376,92 +430,77 @@ int main()
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        // Vamos desenhar 100 instâncias (cópias) do cubo
+        // Vamos desenhar as instâncias (cópias) do cubo
+        int mapSize = 3;
         float transZ = 0.0f;
         float transX = 0.0f;
-        for (int i = 1; i <= 10; ++i){
 
-            transZ += DIST_BETWEEN_CUBES;
-
-            transX = 0.0f;
-            for (int i = 1; i <= 10; ++i)
-            {
-                // Cada cópia do cubo possui uma matriz de modelagem independente,
-                // já que cada cópia estará em uma posição (rotação, escala, ...)
-                // diferente em relação ao espaço global (World Coordinates). Veja
-                // slide 155 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-                glm::mat4 model;
-
-                transX += DIST_BETWEEN_CUBES;
-                model = Matrix_Translate(-transX, 0.0f, -transZ); // translação
-
-                // Enviamos a matriz "model" para a placa de vídeo (GPU). Veja o
-                // arquivo "shader_vertex.glsl", onde esta é efetivamente
-                // aplicada em todos os pontos.
-                glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-
-                // Informamos para a placa de vídeo (GPU) que a variável booleana
-                // "render_as_black" deve ser colocada como "false". Veja o arquivo
-                // "shader_vertex.glsl".
-                glUniform1i(render_as_black_uniform, false);
-
-                // Pedimos para a GPU rasterizar os vértices do cubo apontados pelo
-                // VAO como triângulos, formando as faces do cubo. Esta
-                // renderização irá executar o Vertex Shader definido no arquivo
-                // "shader_vertex.glsl", e o mesmo irá utilizar as matrizes
-                // "model", "view" e "projection" definidas acima e já enviadas
-                // para a placa de vídeo (GPU).
-                //
-                // Veja a definição de g_VirtualScene["cube_faces"] dentro da
-                // função BuildTriangles(), e veja a documentação da função
-                // glDrawElements() em http://docs.gl/gl3/glDrawElements.
-                glDrawElements(
-                    g_VirtualScene["cube_faces"].rendering_mode, // Veja slide 150 do documento "Aula_04_Modelagem_Geometrica_3D.pdf"
-                    g_VirtualScene["cube_faces"].num_indices,
-                    GL_UNSIGNED_INT,
-                    (void*)g_VirtualScene["cube_faces"].first_index
-                );
-
-                // Pedimos para OpenGL desenhar linhas com largura de 4 pixels.
-                glLineWidth(4.0f);
-
-                // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
-                // apontados pelo VAO como linhas. Veja a definição de
-                // g_VirtualScene["axes"] dentro da função BuildTriangles(), e veja
-                // a documentação da função glDrawElements() em
-                // http://docs.gl/gl3/glDrawElements.
-                //
-                // Importante: estes eixos serão desenhamos com a matriz "model"
-                // definida acima, e portanto sofrerão as mesmas transformações
-                // geométricas que o cubo. Isto é, estes eixos estarão
-                // representando o sistema de coordenadas do modelo (e não o global)!
-                glDrawElements(
-                    g_VirtualScene["axes"].rendering_mode,
-                    g_VirtualScene["axes"].num_indices,
-                    GL_UNSIGNED_INT,
-                    (void*)g_VirtualScene["axes"].first_index
-                );
-
-                // Informamos para a placa de vídeo (GPU) que a variável booleana
-                // "render_as_black" deve ser colocada como "true". Veja o arquivo
-                // "shader_vertex.glsl".
-                glUniform1i(render_as_black_uniform, true);
-
-                // Pedimos para a GPU rasterizar os vértices do cubo apontados pelo
-                // VAO como linhas, formando as arestas pretas do cubo. Veja a
-                // definição de g_VirtualScene["cube_edges"] dentro da função
-                // BuildTriangles(), e veja a documentação da função
-                // glDrawElements() em http://docs.gl/gl3/glDrawElements.
-                glDrawElements(
-                    g_VirtualScene["cube_edges"].rendering_mode,
-                    g_VirtualScene["cube_edges"].num_indices,
-                    GL_UNSIGNED_INT,
-                    (void*)g_VirtualScene["cube_edges"].first_index
-                );
-            }
-
+        for (int i = 1; i <= mapSize * 2 + 3; ++i)
+        {
+            Block new_block(true, program_id);
+            new_block.placeOnScene(-transX, -transZ);
+            transX += DIST_BETWEEN_CUBES / 2;
         }
 
+        transZ = DIST_BETWEEN_CUBES * mapSize + DIST_BETWEEN_CUBES;
+        transX = 0.0f;
+
+        for (int i = 1; i <= mapSize * 2 + 3; ++i)
+        {
+            Block new_block(true, program_id);
+            new_block.placeOnScene(-transX, -transZ);
+            transX += DIST_BETWEEN_CUBES / 2;
+        }
+
+        transZ = DIST_BETWEEN_CUBES / 2;
+        transX = 0.0f;
+
+        for (int i = 1; i <= mapSize * 2 + 1; ++i)
+        {
+            Block new_block(true, program_id);
+            new_block.placeOnScene(-transX, -transZ);
+            transZ += DIST_BETWEEN_CUBES / 2;
+        }
+
+        transZ = DIST_BETWEEN_CUBES / 2;
+        transX = DIST_BETWEEN_CUBES * mapSize + DIST_BETWEEN_CUBES;
+
+        for (int i = 1; i <= mapSize * 2 + 1; ++i)
+        {
+            Block new_block(true, program_id);
+            new_block.placeOnScene(-transX, -transZ);
+            transZ += DIST_BETWEEN_CUBES / 2;
+        }
+
+        transZ = 0.0f;
+        transX = 0.0f;
+
+        for (int i = 1; i <= mapSize; ++i)
+        {
+            transZ += DIST_BETWEEN_CUBES;
+            transX = DIST_BETWEEN_CUBES;
+            for (int i = 1; i <= mapSize; ++i)
+            {
+                Block new_block(true, program_id);
+                new_block.placeOnScene(-transX, -transZ);
+                transX += DIST_BETWEEN_CUBES;
+            }
+        }
+
+        transZ = 0.0f;
+        transX = DIST_BETWEEN_CUBES / 2;
+
+        for (int i = 1; i <= mapSize; ++i)
+        {
+            transZ += DIST_BETWEEN_CUBES;
+            transX = DIST_BETWEEN_CUBES / 2;
+            for (int j = 1; j <= mapSize + 1; ++j)
+            {
+                Block new_block(false, program_id);
+                new_block.placeOnScene(-transX, -transZ);
+                transX += DIST_BETWEEN_CUBES;
+            }
+        }
 
         // Agora queremos desenhar os eixos XYZ de coordenadas GLOBAIS.
         // Para tanto, colocamos a matriz de modelagem igual à identidade.
@@ -479,18 +518,6 @@ int main()
         // "render_as_black" deve ser colocada como "false". Veja o arquivo
         // "shader_vertex.glsl".
         glUniform1i(render_as_black_uniform, false);
-
-        // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
-        // apontados pelo VAO como linhas. Veja a definição de
-        // g_VirtualScene["axes"] dentro da função BuildTriangles(), e veja
-        // a documentação da função glDrawElements() em
-        // http://docs.gl/gl3/glDrawElements.
-        glDrawElements(
-            g_VirtualScene["axes"].rendering_mode,
-            g_VirtualScene["axes"].num_indices,
-            GL_UNSIGNED_INT,
-            (void*)g_VirtualScene["axes"].first_index
-        );
 
         // "Desligamos" o VAO, evitando assim que operações posteriores venham a
         // alterar o mesmo. Isso evita bugs.
@@ -634,23 +661,23 @@ GLuint BuildTriangles()
     GLfloat color_coefficients[] = {
     // Cores dos vértices do cubo
     //  R     G     B     A
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 0
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 1
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 2
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 3
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 4
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 5
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 6
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 7
     // Cores para desenhar o eixo X
-        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 8
-        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 9
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 8
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 9
     // Cores para desenhar o eixo Y
-        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 10
-        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 11
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 10
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 11
     // Cores para desenhar o eixo Z
-        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 12
-        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 13
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 12
+        0.0f, 0.8f, 0.0f, 1.0f, // cor do vértice 13
     };
     GLuint VBO_color_coefficients_id;
     glGenBuffers(1, &VBO_color_coefficients_id);
@@ -1256,61 +1283,3 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
-class block
-{
-public:
-    GLint model_uniform;
-    GLint view_uniform;
-    GLint projection_uniform;
-    GLint render_as_black_uniform;
-    bool isFixedBlock;
-    block(bool isFixed, GLuint program_id)
-    {
-        isFixedBlock = isFixed;
-        model_uniform = glGetUniformLocation(program_id, "model");
-        view_uniform = glGetUniformLocation(program_id, "view");
-        projection_uniform = glGetUniformLocation(program_id, "projection");
-        render_as_black_uniform = glGetUniformLocation(program_id, "render_as_black");
-    };
-
-    void placeOnScene(float positionX, float positionZ)
-    {
-        glm::mat4 model;
-        model = Matrix_Translate(positionX, 0.0f, positionZ);
-
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-
-        glUniform1i(render_as_black_uniform, false);
-
-        glDrawElements(
-            g_VirtualScene["cube_faces"].rendering_mode,
-            g_VirtualScene["cube_faces"].num_indices,
-            GL_UNSIGNED_INT,
-            (void*)g_VirtualScene["cube_faces"].first_index
-        );
-
-        glLineWidth(4.0f);
-
-        glDrawElements(
-            g_VirtualScene["axes"].rendering_mode,
-            g_VirtualScene["axes"].num_indices,
-            GL_UNSIGNED_INT,
-            (void*)g_VirtualScene["axes"].first_index
-        );
-
-        glUniform1i(render_as_black_uniform, true);
-
-        glDrawElements(
-            g_VirtualScene["cube_edges"].rendering_mode,
-            g_VirtualScene["cube_edges"].num_indices,
-            GL_UNSIGNED_INT,
-            (void*)g_VirtualScene["cube_edges"].first_index
-        );
-    };
-
-    void explode()
-    {
-
-    };
-};
