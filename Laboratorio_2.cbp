@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="Trab_FCG_github" />
+		<Option title="FCG_Trabalho" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -327,6 +327,7 @@
 		<Unit filename="include/glm/vec4.hpp" />
 		<Unit filename="include/glm/vector_relational.hpp" />
 		<Unit filename="include/matrices.h" />
+		<Unit filename="include/rendering.h" />
 		<Unit filename="include/tiny_obj_loader.h" />
 		<Unit filename="include/utils.h" />
 		<Unit filename="src/glad.c">
