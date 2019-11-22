@@ -1,3 +1,7 @@
 # Excludes bin and obj folders from commits.
 bin/
 obj/
+
+# Excludes CodeBlocks project files.
+Laboratorio_2.depend
+Laboratorio_2.layout
