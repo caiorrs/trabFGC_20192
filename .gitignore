@@ -1,0 +1,3 @@
+# Excludes bin and obj folders from commits.
+bin/
+obj/
